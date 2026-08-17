@@ -1,0 +1,20 @@
+{
+  "name": "sales-report-api",
+  "version": "1.0.0",
+  "description": "Node.js + Express + SQLite API that generates PDF sales reports using Playwright",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/db/seed.js",
+    "playwright:install": "playwright install --with-deps chromium"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "playwright": "^1.47.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "license": "MIT"
+}

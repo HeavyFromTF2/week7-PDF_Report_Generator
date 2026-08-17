@@ -112,6 +112,35 @@ It saves significant CPU, memory, and disk space while keeping response times fa
 
 
 
+
+## AI VS me
+
+### Initial Prompt Used
+> "I need a API in nodejs with express and sqllite to generate reports using Playwright(pdfs). The seed script must populate the DB with 200 random sales from the last 30 days, and the pdf has to show the total sales, the total gains, the top 5 products and a table wth all 200 sales. I want endpoints to create the pdf and how to download it. Send it zipped and ready to run."
+
+### Code Review & Comparison (`git diff --no-index . ai-version/`)
+
+#### 1. What did the AI do better — and do you understand it?
+- **Modular Project Architecture:** The AI structured the project into clear layers (`src/db`, `src/services`, `src/templates`, `src/routes`), separating business logic, queries, and HTTP routing cleanly. I understand this pattern as it improves codebase maintainability and testability.
+- **Data Modeling & Metrics:** It implemented a richer relational schema with separate `products` and `sales` tables, calculating additional financial metrics such as `totalGains` (profit margins) and total units sold alongside basic revenue.
+- **Developer Experience:** It included extra helpful endpoints like `GET /` (API info) and `GET /api/reports/summary` (JSON preview without invoking Chromium), plus convenient npm scripts (`npm run dev`, `npm run seed`).
+
+#### 2. What did it get wrong or silently ignore?
+- **Missing Daily Idempotency Check:** The API does not check if a report was already generated for the current date before running Chromium. It executes a full Playwright generation on every `POST` request, ignoring resource optimization.
+
+#### 3. What did your prompt forget to specify — and what did the AI silently decide for you?
+- **Idempotency Rule:** The prompt did not specify the once-per-day idempotency requirement or the `{"force": true}` override flag. The AI silently decided to create a new unique PDF on every `POST /api/reports/generate` call using ISO timestamps (`sales-report-2026-08-17T23-10-47-406Z.pdf`).
+- **REST Route Naming:** The prompt didn't specify exact URL patterns, so the AI chose `/api/reports/generate` and `/api/reports/:filename/download` instead of standard RESTful resource paths like `POST /reports` and `GET /reports/:id/file`.
+- **SQLite Engine:** The prompt only mentioned "sqllite", so the AI silently decided to use Node's native `node:sqlite` module to avoid native compilation issues on Windows.
+
+---
+
+### Rematch
+- **Improved Prompt:** Added this to the prompt: *"Add an idempotency check on POST /reports: query the database first to see if a report was already generated today. If so, return 200 OK with the existing PDF link and set "reused": true. Only render a new PDF if no report exists for today or if the request body contains {"force": true}."*
+- **What Changed:** The regenerated AI version added an existence check in the database before rendering via Playwright, returning `200 OK` with the existing PDF link when invoked multiple times on the same date unless forced.
+
+
+
 ## AI Usage
 
 I've used AI in this project to:
