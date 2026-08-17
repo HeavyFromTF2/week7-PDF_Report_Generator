@@ -24,29 +24,45 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// POST /reports - Generates the PDF report with a human-readable filename
+// POST /reports - Generates PDF with idempotency check
 app.post('/reports', async (req, res) => {
-  // Format current date into YYYY-MM-DD-HHmmss
-  const now = new Date();
-  const dateStr = now.toISOString().replace(/T/, '-').replace(/:/g, '').split('.')[0]; 
-  
-  // Example filename: reports/report-2026-08-17-184814.pdf  (i switched it because it was unreadable with milliseconds)
-  const filePath = `reports/report-${dateStr}.pdf`;
+  const force = req.body && req.body.force === true;
+  const todayDateStr = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
-  // Render and save the PDF file to disk
+  // Check if a report was already generated today
+  if (!force) {
+    const existingReport = db.prepare(`
+      SELECT * FROM reports 
+      WHERE created_at LIKE ? 
+      ORDER BY id DESC LIMIT 1
+    `).get(`${todayDateStr}%`);
+
+    if (existingReport) {
+      // Return existing report if already created today
+      return res.status(200).json({
+        id: existingReport.id,
+        file: `/reports/${existingReport.id}/file`,
+        reused: true
+      });
+    }
+  }
+
+  // If no report exists for today (or force === true), generate a new one
+  const now = new Date();
+  const timeStr = now.toISOString().replace(/T/, '-').replace(/:/g, '').split('.')[0];
+  const filePath = `reports/report-${timeStr}.pdf`;
+
   await renderPdf(filePath);
 
   const createdAt = now.toISOString();
-
-  // Insert record into the database
   const stmt = db.prepare('INSERT INTO reports (path, created_at) VALUES (?, ?)');
   const result = stmt.run(filePath, createdAt);
   const newId = result.lastInsertRowid;
 
-  // Return status 201 with the download link
   res.status(201).json({
     id: newId,
-    file: `/reports/${newId}/file`
+    file: `/reports/${newId}/file`,
+    reused: false
   });
 });
 
