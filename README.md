@@ -108,7 +108,8 @@ It saves significant CPU, memory, and disk space while keeping response times fa
 
 ## Preview
 
-![Report Preview](path-to-image.png)
+<img width="1200" height="750" alt="image" src="https://github.com/user-attachments/assets/9c12bb50-1e14-4a21-bfe6-801eedd7e6d3" />
+
 
 
 
